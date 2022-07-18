@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
+	"time"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	defer connection.Close()
 
 	client := pb.NewUserServiceClient(connection)
-	AddUserVerbose(client)
+	AddUsers(client)
 }
 
 func AddUser(client pb.UserServiceClient) {
@@ -67,4 +68,48 @@ func AddUserVerbose(client pb.UserServiceClient) {
 	}
 
 	fmt.Println(responseStream)
+}
+
+func AddUsers(client pb.UserServiceClient) {
+	reqs := []*pb.User{
+		&pb.User{
+			Id:    "w1",
+			Name:  "Wesley",
+			Email: "wes@wes.com",
+		},
+		&pb.User{
+			Id:    "a1",
+			Name:  "Arthur",
+			Email: "art@art.com",
+		},
+		&pb.User{
+			Id:    "a2",
+			Name:  "Allan",
+			Email: "all@all.com",
+		},
+		&pb.User{
+			Id:    "r1",
+			Name:  "Ronaldo",
+			Email: "ron@ron.com",
+		},
+	}
+
+	stream, err := client.AddUsers(context.Background())
+
+	if err != nil {
+		log.Fatalf("Error creating request: %v", err)
+	}
+
+	for _, req := range reqs {
+		stream.Send(req)
+		time.Sleep(time.Second * 3)
+	}
+
+	res, err := stream.CloseAndRecv()
+
+	if err != nil {
+		log.Fatalf("Error receiving response: %v", err)
+	}
+
+	fmt.Println(res)
 }
